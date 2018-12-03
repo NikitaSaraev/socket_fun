@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 Byte-compiled / optimized / DLL files
+=======
+# Byte-compiled / optimized / DLL files
+>>>>>>> 956fd81d907c00906be1c0ec439b6ee62a0a1c07
 __pycache__/
 *.py[cod]
 *$py.class
@@ -102,7 +106,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-
 
 # pycharm
 .idea/
