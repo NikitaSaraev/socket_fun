@@ -1,7 +1,5 @@
-import copy
 import select
 import socket
-import time
 
 data = {}
 
@@ -10,53 +8,58 @@ def start_server(host):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setblocking(False)
     server.bind(host)
-    server.listen(100)
+    server.listen()
     return server
 
 
-for i in range(10):
-    data[i] = {'port': 10000 + i}
-    server = start_server(('localhost', 10000 + i))
-    data[i]['sock'] = server
+def start_client(host):
+    client = socket.socket()
+    try:
+        client.connect(host)
+        return client
+    except socket.error:
+        return None
 
-socks = [data[i]['sock'] for i in data]
-inputs, outputs, exceptions = copy.copy(socks), [], []
+
+ports = list(range(10000, 10010, 1))
+
+
+def generate_servers(ports):
+    servers = {}
+    for p in ports:
+        server = start_server(('127.0.0.1', p))
+        servers[server.fileno()] = server
+    return servers
+
+
+server_list = generate_servers(ports)
+inputs = list(server_list.values())
+outputs = []
 
 while True:
-    c = time.time()
-    readers, writers, exceptable = select.select(inputs, outputs, exceptions, 1)
-    for s in readers:
-        if s in socks:
-            connection, client_address = s.accept()
+
+    r, w, e = select.select(inputs, outputs, inputs, 1)
+    for soc in r:
+        if soc in server_list.values():
+            connection, client_address = soc.accept()
             connection.setblocking(0)
             inputs.append(connection)
-            outputs.append(connection)
         else:
-            try:
-                data = s.recv(1024)
-                if data:
-                    if s not in outputs:
-                        outputs.append(s)
-                else:
-                    if s in outputs:
-                        outputs.remove(s)
-                    inputs.remove(s)
-                    s.close()
-            except socket.error:
-                print(s)
-                inputs.remove(s)
-                if s in outputs:
-                    outputs.remove(s)
-    for s in writers:
-        pass
-    if exceptable:
-        break
-    for s in exceptable:
-
+            data = soc.recv(1024)
+            if data:
+                if soc not in outputs:
+                    outputs.append(soc)
+            else:
+                if soc in outputs:
+                    outputs.remove(soc)
+                inputs.remove(soc)
+                soc.close()
+    for s in w:
+        print(s.fileno())
+    # Handle "exceptional conditions"
+    for s in e:
+        # Stop listening for input on the connection
         inputs.remove(s)
         if s in outputs:
             outputs.remove(s)
-        addr = s.getpeername()
         s.close()
-        s = start_server(addr)
-        inputs.append(s)

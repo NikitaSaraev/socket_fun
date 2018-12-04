@@ -1,6 +1,5 @@
 import select
 import socket
-import copy
 
 
 def start_client(host):
@@ -46,7 +45,7 @@ while True:
             print('restarting socket {}'.format(s))
             s.close()
     for s in writers:
-        pass
+        s.send(b';((')
     if exceptable:
         break
     for s in exceptable:
